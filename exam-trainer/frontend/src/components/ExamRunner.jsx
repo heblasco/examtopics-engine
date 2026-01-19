@@ -105,22 +105,48 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
 
     const getQuestionKey = (q) => `${q.topic}-${q.id}`;
 
+    const isMultipleChoice = (q) => {
+        // A question is multiple choice if the answer has more than one letter
+        return q.answer && q.answer.length > 1;
+    };
+
     const handleOptionSelect = (q, optionText) => {
         if (isFinished) return;
         const match = optionText.match(/^([A-Z])\./);
         const letter = match ? match[1] : null;
+        if (!letter) return;
 
-        setUserAnswers(prev => ({
-            ...prev,
-            [getQuestionKey(q)]: letter
-        }));
+        const questionKey = getQuestionKey(q);
+        const isMultiple = isMultipleChoice(q);
+
+        setUserAnswers(prev => {
+            if (isMultiple) {
+                // Multiple choice mode: toggle the option
+                const currentAnswers = prev[questionKey] || [];
+                const newAnswers = currentAnswers.includes(letter)
+                    ? currentAnswers.filter(l => l !== letter)
+                    : [...currentAnswers, letter].sort();
+                return {
+                    ...prev,
+                    [questionKey]: newAnswers
+                };
+            } else {
+                // Single choice mode: replace the answer
+                return {
+                    ...prev,
+                    [questionKey]: [letter]
+                };
+            }
+        });
     };
 
     const calculateScore = () => {
         let correctCount = 0;
         sessionQuestions.forEach(q => {
-            const userAns = userAnswers[getQuestionKey(q)];
-            if (userAns === q.answer) {
+            const userAns = userAnswers[getQuestionKey(q)] || [];
+            const correctAns = q.answer.split('').sort().join('');
+            const userAnsStr = userAns.sort().join('');
+            if (userAnsStr === correctAns) {
                 correctCount++;
             }
         });
@@ -174,8 +200,10 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
         const passed = percent >= 70;
 
         const wrongQuestions = sessionQuestions.filter(q => {
-            const userAns = userAnswers[getQuestionKey(q)];
-            return userAns !== q.answer;
+            const userAns = userAnswers[getQuestionKey(q)] || [];
+            const correctAns = q.answer.split('').sort().join('');
+            const userAnsStr = userAns.sort().join('');
+            return userAnsStr !== correctAns;
         });
 
         return (
@@ -229,11 +257,11 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
                                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '2rem' }}>
                                     <span style={{ color: isCorrect ? 'var(--success)' : 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         {isCorrect ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                                        Your Answer: {userAns || 'None'}
+                                        Your Answer: {userAns.length > 0 ? userAns.join(', ') : 'None'}
                                     </span>
                                     {!isCorrect && <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <CheckCircle size={16} />
-                                        Correct: {q.answer}
+                                        Correct: {q.answer.split('').join(', ')}
                                     </span>}
                                 </div>
                             </div>
@@ -246,7 +274,8 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
 
     const currentQ = sessionQuestions[currentIndex];
     const currentKey = getQuestionKey(currentQ);
-    const selectedAnswer = userAnswers[currentKey];
+    const selectedAnswers = userAnswers[currentKey] || [];
+    const isMultiple = isMultipleChoice(currentQ);
 
     return (
         <div className="exam-runner">
@@ -281,10 +310,15 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
                 </p>
 
                 <div className="options" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                    {isMultiple && (
+                        <div style={{ fontSize: '0.9em', color: 'var(--primary-color)', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                            ℹ️ Multiple choice - Select all correct answers
+                        </div>
+                    )}
                     {currentQ.options.map((opt, idx) => {
                         const letter = opt.match(/^([A-Z])\./)?.[1];
-                        const isSelected = selectedAnswer === letter;
-                        const isCorrectAnswer = letter === currentQ.answer;
+                        const isSelected = selectedAnswers.includes(letter);
+                        const isCorrectAnswer = currentQ.answer.includes(letter);
 
                         let borderColor = 'transparent';
                         let bgColor = 'rgba(255,255,255,0.05)';
@@ -318,7 +352,8 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
                                 }}
                             >
                                 <span style={{ fontWeight: 'bold', minWidth: '1.5rem' }}>{letter}.</span>
-                                <div>{opt.substring(opt.indexOf('.') + 1).trim()}</div>
+                                <div style={{ flex: 1 }}>{opt.substring(opt.indexOf('.') + 1).trim()}</div>
+                                {isSelected && <CheckCircle size={20} color="var(--primary-color)" />}
                             </div>
                         );
                     })}
