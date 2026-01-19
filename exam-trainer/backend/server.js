@@ -6,7 +6,7 @@ const { parseMarkdown } = require('./parser');
 
 const app = express();
 const PORT = 3001;
-const EXAMS_DIR = path.resolve(__dirname, '../../Exams');
+const EXAMS_DIR = path.resolve(__dirname, '../../exams');
 
 app.use(cors());
 app.use(express.json());

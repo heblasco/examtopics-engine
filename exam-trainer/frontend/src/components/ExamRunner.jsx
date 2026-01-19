@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Home, Repeat, Eye, EyeOff, Edit2, LogOut, MessageSquare } from 'lucide-react';
 import QuestionEditor from './QuestionEditor';
+import { API_URL } from '../config';
 
 const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => {
     const [allQuestions, setAllQuestions] = useState([]);
@@ -34,14 +35,14 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
             // But let's prioritize the session.
             setLoading(false);
             // Background fetch to keep 'allQuestions' populated for editing logic if needed
-            fetch(`http://localhost:3001/api/exams/${filename}`)
+            fetch(`${API_URL}/api/exams/${filename}`)
                 .then(res => res.json())
                 .then(data => setAllQuestions(data.questions))
                 .catch(console.error);
             return;
         }
 
-        fetch(`http://localhost:3001/api/exams/${filename}`)
+        fetch(`${API_URL}/api/exams/${filename}`)
             .then(res => res.json())
             .then(data => {
                 const raw = data.questions;
@@ -92,7 +93,7 @@ const ExamRunner = ({ filename, config, initialQuestions, onRetry, onExit }) => 
         setEditingQuestion(null);
 
         try {
-            await fetch(`http://localhost:3001/api/exams/${filename}`, {
+            await fetch(`${API_URL}/api/exams/${filename}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ questions: newAll })

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Settings, Shuffle, ListOrdered, Hash } from 'lucide-react';
+import { API_URL } from '../config';
 
 const ExamConfig = ({ filename, onStart, onBack }) => {
     const [count, setCount] = useState(10);
@@ -10,7 +11,7 @@ const ExamConfig = ({ filename, onStart, onBack }) => {
     const [totalQuestions, setTotalQuestions] = useState(0);
 
     useEffect(() => {
-        fetch(`http://localhost:3001/api/exams/${filename}`)
+        fetch(`${API_URL}/api/exams/${filename}`)
             .then(res => res.json())
             .then(data => {
                 if (data && data.questions) {

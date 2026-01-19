@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, FileText, Loader2 } from 'lucide-react';
+import { API_URL } from '../config';
 
 const ExamList = ({ onSelect }) => {
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:3001/api/exams')
+        fetch(`${API_URL}/api/exams`)
             .then(res => res.json())
             .then(data => {
                 setExams(data);
